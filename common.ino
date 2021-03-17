@@ -18,41 +18,51 @@ void processCommand() { // Process nem command
       sendCommand(0x50, 2, dataTX.bytes);
       break;
     case 0x11: // Who are you
-      dataTX.ints[0] = 0x524F;
+      dataTX.ints[0] = 0x5749;
       sendCommand(0x51, 2, dataTX.bytes);
       break;
-    case 0x12: //set distance
-       distanceInMM(dataRX.ints[0]);
-      break;
-    case 0x13: //Open valve
-      dataRX.ints[0];
-      break;
-    case 0x14: // Get all data
-      if (dataRX.ints[0] == 0) { sendPeriod = 0;}
-      else if (dataRX.ints[0] < 10) { sendPeriod = 10;}
-      else if (dataRX.ints[0] > 10000) { sendPeriod = 10000;}
-      else { sendPeriod = dataRX.ints[0];}
-//      for(int i = 0; i < 6; i++) { filterLP[i].setFrequency(1/(float(sendPeriod)*1e-3)); }
-      break;
-    case 0x16: //Set PID params
-      
-      break;
-    case 0x17: //Save PID params
-      
-      break;
-    case 0x18: //Start/Stop motors
-      
-      break;
     case 0x19: //Emergency stop
-      //STOP
+      stepperLeft.stop();
+      stepperRight.stop();
       break;
     case 0x20: //Heartbeat
       HeartbeatTime = 0;
+      break;
+    case 0x21: // Set position
+      stepperLeft.moveTo(((long)dataRX.ints[0])*8);
+      stepperRight.moveTo(((long)dataRX.ints[1])*8);
+      break;
+    case 0x22: // Get state
+      dataTX.ints[0] = 0x0000;
+      sendCommand(0x54, 2, dataTX.bytes);
+      break;
+    case 0x23: // Homing
+      Homing();
       break;
     default:
       sendText("Unknown Command Received!\n");
       break;
   }
+}
+
+void Homing(){
+  stepperLeft.setSpeed(800.0);
+  while(digitalRead(END_L) == LOW){
+    stepperLeft.runSpeed();
+  }
+  stepperLeft.stop();
+  stepperLeft.setCurrentPosition(0);
+  dataTX.ints[0] = 0x0001;
+  sendCommand(0x56, 2, dataTX.bytes);
+
+ /* stepperRight.setSpeed(800.0);
+  while(digitalRead(ALRM_R) == LOW){
+    stepperRight.runSpeed();
+  }
+  stepperRight.stop();
+  stepperRight.setCurrentPosition(0);
+  dataTX.ints[0] = 0x0002;
+  sendCommand(0x56, 2, dataTX.bytes);*/
 }
 
 void sendCommand(byte cmd, byte len, byte data[]) {
